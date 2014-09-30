@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+
+use massa;
+use vCard::AddressBook;
+
+sub readcsv($) {
+  my($from) = @_;
+  open my $f, '<', $from or die "cannot open '$from' for reading";
+  my $x = <$f>;
+  map {
+    [ grep { $_ } map { s/^\s+//; s/\s+$//; $_ } split /\t/ ]
+  } <$f>
+}
+
+sub addressbook(@) {
+  my $a = vCard::AddressBook->new;
+  for( @_ ) {
+    my($name, @fones) = @$_;
+    my $v = $a->add_vcard;
+    $v->full_name($name);
+    $v->phones( [ map { { type => ['cell'], number => $_ } } @fones ] )
+  }
+  $a
+}
+
+sub csv2vcf($) {
+  local($_) = @_;
+  my $from = $_;
+  s/\.csv$/.vcf/;
+  my $to = $_;
+
+  addressbook( readcsv $from )->as_file($to)
+}
+
+sub main(@) {
+  csv2vcf $_ for @_
+}
+
+main @ARGV
+
